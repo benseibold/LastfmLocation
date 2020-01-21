@@ -41,21 +41,14 @@ music_df = pd.read_csv(r'Data\lastfm.csv', names=['artist', 'album', 'song', 'da
 # Convert lastfm time string to timestamp like google has
 music_df['timestamp'] = music_df['date'].apply(lambda date: datetime.datetime.timestamp(datetime.datetime.strptime(date, '%d %b %Y %H:%M')))
 
-print(music_df['date'][1000])
-
-bi = bisect.bisect(location_name_df['startTimestamp'].tolist(), music_df['timestamp'][5229])
-print(location_name_df)
-print('Bisect: ', location_name_df['startTimestamp'][bi - 1], music_df['timestamp'][5229], location_name_df['endTimestamp'][bi - 1], bi)
-
 for index, song in music_df.iterrows():
 
     bi = bisect.bisect(location_name_df['startTimestamp'].tolist(), song['timestamp'])
-    # print(bi, (songTimestamp > location_name_df['startTimestamp'][bi - 1]), (songTimestamp < location_name_df['endTimestamp'][bi - 1]) )
-    # print('Bisect: ', location_name_df['startTimestamp'][bi - 1], songTimestamp, location_name_df['endTimestamp'][bi - 1], bi)
     
     if ( (bi > 1) and (song['timestamp'] > location_name_df['startTimestamp'][bi - 1]) and (song['timestamp'] < location_name_df['endTimestamp'][bi - 1]) ):
         print(song)
         print(location_name_df['name'][bi - 1])
+
 
 print(music_df)
 
