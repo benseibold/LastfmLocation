@@ -100,7 +100,8 @@ for place_key in songsInPlace:
 
 
 # TODO: as of nov 19 2020, get this working for all years and not just 2019, 
-# I also have a suspician that sumething isn't working right with the songs in the locations so figure out if that is working correctly, bring in new data from lastfm and google
+# Something is wrong with lastfm or google timestamps leading to some songs at wonky places but it can't really be fixed , 
+# bring in new data from lastfm and google, delete files in git that shouldn't be in git
 
 
 
