@@ -34,7 +34,6 @@ all_files = glob.glob(os.path.join('', "*.json"))
 full_location_json = []
 year_list = ['2018', '2019', '2020']
 for year in year_list:
-    # print(r"Data\GoogleData1-1-2020\Location History\Semantic Location History\{0}".format(year))
     for f in glob.glob(os.path.join(r'Data\GoogleData1-1-2020\Location History\Semantic Location History\{0}'.format(year), "*.json")):
         with open(f, encoding="utf8") as i:
             full_location_json.append(json.load(i))
@@ -47,7 +46,7 @@ for month in full_location_json:
             if(n == 'placeVisit'):
                 places_json.append(activity)
 
-# Sort months chronologically.  NOT SURE IF THIS IS WORKING NOV 19th 
+# Sort months chronologically
 places_json = sorted(places_json, key = lambda i: i['placeVisit']['duration']['startTimestampMs'] )
 
 
@@ -89,34 +88,49 @@ for index, song in music_df.iterrows():
             # append song to existing dict value list
             songsInPlace[location_name_df['name'][bi - 1]].append(song)
 
+# Removes places with only a few songs listened to
+temp = {}
+for place_key in songsInPlace.keys():
+    if len(songsInPlace[place_key]) > 20:
+       temp[place_key] = songsInPlace[place_key]
+       
+songsInPlace = temp
 
-# Ranks songs in each place
+
+# Makes a csv for the map
+map_csv = pd.DataFrame(songsInPlace.keys(), columns=['place'])
+
+map_csv['latitude'] = map_csv.apply( lambda row: songsInPlace[row['place']][0] / 10000000, axis=1)
+map_csv['longitude'] = map_csv.apply( lambda row: songsInPlace[row['place']][1] / 10000000, axis=1)
+# map_csv['1'] = map_csv.apply( lambda row: songsInPlace[row['place']][2], axis=1)
+
+# Ranks songs in each place and puts them in a df to join with map_csv
+top_songs_csv = []
 for place_key in songsInPlace:
-    # print("##################################")
-    # print(place_key)
     played_in_place_counter = {}
-    top_songs_in_place = []
-    for song in songsInPlace[place_key]:
-        if song['song'] in played_in_place_counter.keys():
-            played_in_place_counter[song['song']] += 1
+    for i in range(2, len(songsInPlace[place_key]) - 1):
+        if songsInPlace[place_key][i]['song'] in played_in_place_counter.keys():
+            played_in_place_counter[songsInPlace[place_key][i]['song']] += 1
         else:
-            played_in_place_counter[song['song']] = 1
+            played_in_place_counter[songsInPlace[place_key][i]['song']] = 1
         ordered_played_in_place_counter = sorted(played_in_place_counter.items(), key=lambda x: x[1], reverse=True)
-        top_songs_in_place.append(ordered_played_in_place_counter)
     
-    # for i in range(0,5):
-    #     if i < len(ordered_played_in_place_counter):
-    #         print(ordered_played_in_place_counter[i])
+    top_songs_csv.append(ordered_played_in_place_counter[:4])
 
-us_cities = pd.read_csv("Data\mapTest.csv")
 
-fig = px.scatter_mapbox(us_cities, lat="lat", lon="lon", hover_name="City", hover_data=["State", "Population"],
+top_songs_df = pd.DataFrame(top_songs_csv, columns=['1','2','3','4'])
+
+map_csv = map_csv.join(top_songs_df)
+
+# print(map_csv['1'][1][1])
+# map_csv.drop(map_csv[map_csv['1'] > 1].index, inplace = True)
+
+fig = px.scatter_mapbox(map_csv, lat="latitude", lon="longitude", hover_name="place", hover_data=["place", "1", "2", "3"],
                         color_discrete_sequence=["fuchsia"], zoom=3, height=300)
 fig.update_layout(mapbox_style="open-street-map")
 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 fig.show()
 
-fig.show()
 
 
 # TODO:
