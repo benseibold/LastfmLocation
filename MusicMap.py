@@ -102,7 +102,6 @@ map_csv = pd.DataFrame(songsInPlace.keys(), columns=['place'])
 
 map_csv['latitude'] = map_csv.apply( lambda row: songsInPlace[row['place']][0] / 10000000, axis=1)
 map_csv['longitude'] = map_csv.apply( lambda row: songsInPlace[row['place']][1] / 10000000, axis=1)
-# map_csv['1'] = map_csv.apply( lambda row: songsInPlace[row['place']][2], axis=1)
 
 # Ranks songs in each place and puts them in a df to join with map_csv
 top_songs_csv = []
@@ -122,8 +121,8 @@ top_songs_df = pd.DataFrame(top_songs_csv, columns=['1','2','3','4'])
 
 map_csv = map_csv.join(top_songs_df)
 
-# print(map_csv['1'][1][1])
-# map_csv.drop(map_csv[map_csv['1'] > 1].index, inplace = True)
+print(map_csv['1'][1][1])
+map_csv.drop(map_csv[map_csv['1'] > 1].index, inplace = True)
 
 fig = px.scatter_mapbox(map_csv, lat="latitude", lon="longitude", hover_name="place", hover_data=["place", "1", "2", "3"],
                         color_discrete_sequence=["fuchsia"], zoom=3, height=300)
@@ -134,9 +133,8 @@ fig.show()
 
 
 # TODO:
-# get map working with google data.  lat and long are now in songs in place
+# Delete map csv rows that have number one songs with under two plays, get top songs per country
 # Something is wrong with lastfm or google timestamps leading to some songs at wonky places but it can't really be fixed,
-# bring in new data from lastfm and google
 
 
 
