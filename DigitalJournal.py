@@ -22,22 +22,34 @@ def findkeys(node, kv):
                 yield x
 
 # print intresting bits of full_json
-def printFinalJson(json):
-    for i in json:
-        match i['name']:
-            case 'text':
-                print("{0}: {1}".format(i['contactName'], i['body']))
-            case 'activitySegment':
-                print(i['activityType'])
-            case 'placeVisit':
-                print(i['placeName'])
-            case _:
-                raise Exception("Trying to print unrecognized name")
+def printFinalJson(full_json):
+    for i in full_json:
+        if int(i['startTime']) > 1568504826908 and int(i['startTime']) < 1568933638152:
+            match i['name']:
+                case 'text':
+                    print("{0}: {1}".format(i['contactName'], i['body']))
+                case 'activitySegment':
+                    print(i['activityType'])
+                case 'placeVisit':
+                    print(i['placeName'])
+                case _:
+                    raise Exception("Trying to print unrecognized name")
+
+# Save resulting json for react app
+def jsonToFile(full_json):
+    # limits size of data.json
+    file_json = [];
+    for i in full_json:
+        if int(i['startTime']) > 1568504826908 and int(i['startTime']) < 1666286053000:
+            file_json.append(i)
+
+    with open('react/site/src/data.json', 'w') as f:
+        json.dump(file_json, f)
 
 
 # Read location json
 full_location_json = []
-year_list = ['2020']
+year_list = ['2018', '2020', '2021', '2022']
 for year in year_list:
     # for f in glob.glob(os.path.join(r'Data\GoogleData1-1-2020\Location History\Semantic Location History\{0}'.format(year), "*.json")):
     for f in glob.glob(os.path.join(location_path, "*.json")):
@@ -91,8 +103,9 @@ full_json = full_location_json + sms_json
 # Sort months chronologically
 full_json = sorted(full_json, key = lambda i: i['startTime'] )
 
-# TODO add in markers for each new day, get lastfm songs in full_json, look into making a webpage to display everything
+# TODO Get lastfm songs in full_json, look into making a webpage to display everything
 # more text analytics? like most used words with people, texting frequency with people ect
 
 printFinalJson(full_json)
+jsonToFile(full_json)
     
