@@ -1,8 +1,6 @@
 import pandas as pd
 import glob, os, json
 import datetime
-import bisect
-import itertools
 import xml.etree.ElementTree as et
 
 location_path = r'Data\GoogleData1-1-2020\Location History\Semantic Location History\2019'
@@ -46,6 +44,28 @@ def jsonToFile(full_json):
     with open('react/site/src/data.json', 'w') as f:
         json.dump(file_json, f)
 
+# Save SMS data to text file
+def smsToTextFile(input):
+    with open('Data/texts.txt', 'w', encoding='utf8') as f:
+        json.dump(input, f, indent=2)
+
+# Count messages per contact
+def countMessagesByContact(sms_json):
+    contact_counts = {}
+    for message in sms_json:
+        contact_name = message['contactName']
+        if contact_name in contact_counts:
+            contact_counts[contact_name] += 1
+        else:
+            contact_counts[contact_name] = 1
+
+    # Sort by count (highest to lowest) and print
+    sorted_contacts = sorted(contact_counts.items(), key=lambda x: x[1], reverse=True)
+    for contact, count in sorted_contacts:
+        print(f"{contact}: {count}")
+
+    return contact_counts
+
 
 # Read location json
 full_location_json = []
@@ -68,7 +88,8 @@ for child in root:
         sms_json.append({
             'name':'text', 'body': child.attrib['body'], 'startTime': child.attrib['date'], 'type': child.attrib['type'], 'contactName': child.attrib['contact_name']
         })
-
+# smsToTextFile(sms_json)
+countMessagesByContact(sms_json)
 
 # Convert lastfm time string to timestamp like google has
 music_df['timestamp'] = music_df['date'].apply(lambda date: datetime.datetime.timestamp(datetime.datetime.strptime(date, '%d %b %Y %H:%M')))
@@ -106,6 +127,6 @@ full_json = sorted(full_json, key = lambda i: i['startTime'] )
 # TODO Get lastfm songs in full_json, look into making a webpage to display everything
 # more text analytics? like most used words with people, texting frequency with people ect
 
-printFinalJson(full_json)
-jsonToFile(full_json)
+# printFinalJson(full_json)
+# jsonToFile(full_json)
     

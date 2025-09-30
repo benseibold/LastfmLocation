@@ -121,9 +121,8 @@ top_songs_df = pd.DataFrame(top_songs_csv, columns=['1','2','3','4'])
 
 map_csv = map_csv.join(top_songs_df)
 
-print(map_csv['1'][1][1])
-map_csv.drop(map_csv[map_csv['1'] > 1].index, inplace = True)
-
+# Removes all locations that don't have a song thats been played twice
+map_csv = map_csv[map_csv['1'].apply(lambda x: x[1] >= 2)]
 fig = px.scatter_mapbox(map_csv, lat="latitude", lon="longitude", hover_name="place", hover_data=["place", "1", "2", "3"],
                         color_discrete_sequence=["fuchsia"], zoom=3, height=300)
 fig.update_layout(mapbox_style="open-street-map")
