@@ -115,7 +115,7 @@ for place_key in songsInPlace:
         ordered_played_in_place_counter = sorted(played_in_place_counter.items(), key=lambda x: x[1], reverse=True)
     
     top_songs_csv.append(ordered_played_in_place_counter[:4])
-
+ 
 
 top_songs_df = pd.DataFrame(top_songs_csv, columns=['1','2','3','4'])
 
