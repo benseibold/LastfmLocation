@@ -23,15 +23,14 @@ def findkeys(node, kv):
 def printFinalJson(full_json):
     for i in full_json:
         if int(i['startTime']) > 1568504826908 and int(i['startTime']) < 1568933638152:
-            match i['name']:
-                case 'text':
-                    print("{0}: {1}".format(i['contactName'], i['body']))
-                case 'activitySegment':
-                    print(i['activityType'])
-                case 'placeVisit':
-                    print(i['placeName'])
-                case _:
-                    raise Exception("Trying to print unrecognized name")
+            if i['name'] == 'text':
+                print("{0}: {1}".format(i['contactName'], i['body']))
+            elif i['name'] == 'activitySegment':
+                print(i['activityType'])
+            elif i['name'] == 'placeVisit':
+                print(i['placeName'])
+            else:
+                raise Exception("Trying to print unrecognized name")
 
 # Save resulting json for react app
 def jsonToFile(full_json):
@@ -69,7 +68,7 @@ def countMessagesByContact(sms_json):
 
 # Read location json
 full_location_json = []
-year_list = ['2018', '2020', '2021', '2022']
+year_list = ['2018', '2020', '2021', '2022', '2023', '2024', '2025', '2026']
 for year in year_list:
     # for f in glob.glob(os.path.join(r'Data\GoogleData1-1-2020\Location History\Semantic Location History\{0}'.format(year), "*.json")):
     for f in glob.glob(os.path.join(location_path, "*.json")):
@@ -80,7 +79,7 @@ for year in year_list:
 music_df = pd.read_csv(r'Data/lastfm.csv', names=['artist', 'album', 'song', 'date'])
 
 # Read SMS xml
-sms_xml = open('Data/SmsDataTest.xml', 'r', encoding="utf8").read()
+sms_xml = open('Data/SmsData.xml', 'r', encoding="utf8").read()
 root = et.XML(sms_xml)
 sms_json = []
 for child in root:

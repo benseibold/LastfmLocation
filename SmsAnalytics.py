@@ -6,8 +6,26 @@ from collections import Counter
 from datetime import datetime
 import re
 
+# Contact name mapping (phone number -> friendly name)
+CONTACT_MAP = {
+    '5166729609': 'Tom Fry',
+    '7165531532': 'Dad',
+    '7163959787': 'Mere',
+    '9144860283': 'Jon Higgins',
+    '7166018019': 'Lucia',
+    '7162071443': 'Mom',
+    '7165171063': 'Read',
+    '7165608311': 'Riley',
+    '7163434183': 'Andy Santuli'
+    # Add more contacts as needed
+}
+
+def get_contact_display_name(phone_number):
+    """Map phone number to display name, or return phone number if not mapped."""
+    return CONTACT_MAP.get(phone_number, phone_number)
+
 # Read SMS XML
-sms_xml = open('Data/SmsDataTest.xml', 'r', encoding="utf8").read()
+sms_xml = open('Data/SmsData.xml', 'r', encoding="utf8").read()
 root = et.XML(sms_xml)
 
 # Parse SMS data
@@ -24,6 +42,9 @@ for child in root:
 # Create DataFrame
 df = pd.DataFrame(sms_data)
 
+# Map contact names
+df['contact_display'] = df['contact_name'].apply(get_contact_display_name)
+
 # Convert timestamp to datetime
 df['datetime'] = pd.to_datetime(df['date'], unit='ms')
 df['year_month'] = df['datetime'].dt.to_period('M')
@@ -31,14 +52,14 @@ df['year_month'] = df['datetime'].dt.to_period('M')
 # --- Visualization 1: People Texted Most Over Time ---
 
 # Get top contacts by total message count
-contact_counts = df['contact_name'].value_counts()
+contact_counts = df['contact_display'].value_counts()
 top_contacts = contact_counts.head(10).index.tolist()
 
 # Filter to top contacts
-df_top = df[df['contact_name'].isin(top_contacts)]
+df_top = df[df['contact_display'].isin(top_contacts)]
 
 # Count messages per contact per month
-contact_time_data = df_top.groupby(['year_month', 'contact_name']).size().reset_index(name='count')
+contact_time_data = df_top.groupby(['year_month', 'contact_display']).size().reset_index(name='count')
 contact_time_data['year_month'] = contact_time_data['year_month'].astype(str)
 
 # Create line chart
@@ -46,9 +67,9 @@ fig1 = px.line(
     contact_time_data,
     x='year_month',
     y='count',
-    color='contact_name',
+    color='contact_display',
     title='Top 10 Contacts: Message Volume Over Time',
-    labels={'year_month': 'Month', 'count': 'Number of Messages', 'contact_name': 'Contact'}
+    labels={'year_month': 'Month', 'count': 'Number of Messages', 'contact_display': 'Contact'}
 )
 fig1.update_xaxes(tickangle=45)
 fig1.show()
@@ -78,7 +99,7 @@ stop_words = {
 contact_word_freq = {}
 
 for contact in top_contacts[:5]:  # Top 5 contacts for word analysis
-    contact_messages = df_top[df_top['contact_name'] == contact]['body']
+    contact_messages = df_top[df_top['contact_display'] == contact]['body']
 
     all_words = []
     for message in contact_messages:
@@ -140,13 +161,13 @@ df_sent = df_top[df_top['type'] == '2'].copy()
 df_sent['hour'] = df_sent['datetime'].dt.hour
 
 # Count messages by hour and contact
-hourly_data = df_sent.groupby(['contact_name', 'hour']).size().reset_index(name='count')
+hourly_data = df_sent.groupby(['contact_display', 'hour']).size().reset_index(name='count')
 
 # Create heatmap
 fig3 = go.Figure()
 
 for contact in top_contacts:
-    contact_hourly = hourly_data[hourly_data['contact_name'] == contact]
+    contact_hourly = hourly_data[hourly_data['contact_display'] == contact]
 
     # Create full 24-hour range with zeros for missing hours
     hours_df = pd.DataFrame({'hour': range(24)})
@@ -194,7 +215,7 @@ fig3.show()
 # --- Visualization 4: Response Time Analysis ---
 
 # Sort by contact and datetime
-df_sorted = df_top.sort_values(['contact_name', 'datetime']).reset_index(drop=True)
+df_sorted = df_top.sort_values(['contact_display', 'datetime']).reset_index(drop=True)
 
 # Calculate response times
 response_times = []
@@ -203,7 +224,7 @@ for i in range(1, len(df_sorted)):
     previous = df_sorted.iloc[i-1]
 
     # Check if same contact and if current is sent (type='2') and previous is received (type='1')
-    if (current['contact_name'] == previous['contact_name'] and
+    if (current['contact_display'] == previous['contact_display'] and
         current['type'] == '2' and previous['type'] == '1'):
 
         time_diff = (current['datetime'] - previous['datetime']).total_seconds() / 60  # minutes
@@ -211,19 +232,19 @@ for i in range(1, len(df_sorted)):
         # Only count responses within 24 hours (1440 minutes)
         if 0 < time_diff <= 1440:
             response_times.append({
-                'contact_name': current['contact_name'],
+                'contact_display': current['contact_display'],
                 'response_time_minutes': time_diff
             })
 
 if response_times:
     response_df = pd.DataFrame(response_times)
-    avg_response = response_df.groupby('contact_name')['response_time_minutes'].agg(['mean', 'median', 'count']).reset_index()
+    avg_response = response_df.groupby('contact_display')['response_time_minutes'].agg(['mean', 'median', 'count']).reset_index()
     avg_response = avg_response[avg_response['count'] >= 5]  # At least 5 responses
     avg_response = avg_response.sort_values('median')
 
     fig4 = go.Figure()
     fig4.add_trace(go.Bar(
-        x=avg_response['contact_name'],
+        x=avg_response['contact_display'],
         y=avg_response['median'],
         name='Median Response Time',
         text=[f"{x:.1f} min" for x in avg_response['median']],
@@ -242,12 +263,12 @@ if response_times:
 
 sent_received_data = []
 for contact in top_contacts:
-    contact_data = df_top[df_top['contact_name'] == contact]
+    contact_data = df_top[df_top['contact_display'] == contact]
     sent_count = len(contact_data[contact_data['type'] == '2'])
     received_count = len(contact_data[contact_data['type'] == '1'])
 
     sent_received_data.append({
-        'contact_name': contact,
+        'contact_display': contact,
         'sent': sent_count,
         'received': received_count,
         'total': sent_count + received_count
@@ -258,14 +279,14 @@ sr_df = pd.DataFrame(sent_received_data).sort_values('total', ascending=True)
 fig5 = go.Figure()
 fig5.add_trace(go.Bar(
     name='Sent',
-    y=sr_df['contact_name'],
+    y=sr_df['contact_display'],
     x=sr_df['sent'],
     orientation='h',
     marker_color='lightblue'
 ))
 fig5.add_trace(go.Bar(
     name='Received',
-    y=sr_df['contact_name'],
+    y=sr_df['contact_display'],
     x=sr_df['received'],
     orientation='h',
     marker_color='lightcoral'
@@ -296,9 +317,6 @@ fig6 = go.Figure(data=go.Heatmap(
     x=heatmap_pivot.columns,
     y=heatmap_pivot.index,
     colorscale='Blues',
-    text=heatmap_pivot.values,
-    texttemplate='%{text:.0f}',
-    textfont={"size": 8},
     colorbar=dict(title="Message Count")
 ))
 
@@ -357,4 +375,4 @@ for contact, count in contact_counts.head(10).items():
 if response_times:
     print(f"\nAverage response times (median):")
     for _, row in avg_response.head(10).iterrows():
-        print(f"  {row['contact_name']}: {row['median']:.1f} minutes ({row['count']:.0f} responses analyzed)")
+        print(f"  {row['contact_display']}: {row['median']:.1f} minutes ({row['count']:.0f} responses analyzed)")
